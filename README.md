@@ -185,8 +185,8 @@ Forbidden
 All configuration is done through environmental variables.
 
 | Key | Required | Default | Description |
-|--------------------|----------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `PROXY_URL` | yes      | | The fully-qualified URL to proxy API requests EX `http://socket-proxy:2375` |
+| -------------------- | ---------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PROXY_URL` | yes | | The fully-qualified URL to proxy API requests EX `http://socket-proxy:2375` |
 | `CONTAINER_NAMES` | no | | A comma-delimited list of values to compare against a container name. |
 | `CONTAINER_LABELS` | no | | A comma-delimited list of key-values to compare against container labels. |
 | `SCRUB_ENVS` | no | false | Remove `Env` list from [container inspect API](https://docs.docker.com/reference/api/engine/version/v1.48/#tag/Container/operation/ContainerInspect) response |
