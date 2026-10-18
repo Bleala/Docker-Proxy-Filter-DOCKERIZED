@@ -28,9 +28,22 @@ pub async fn forward(
     app_config: web::types::State<AppConfig>,
     data: web::types::State<AppStateWithContainerMap>
 ) -> Result<web::HttpResponse, web::Error> {
+    // reject percent-encoded paths: the Docker API never needs them and they would bypass the route matching below
+    if req.uri().path().contains('%') {
+        return Ok(web::HttpResponse::BadRequest().json(&DockerErrorMessage { message: String::from("percent-encoded paths are not allowed") }));
+    }
     let mut new_url = forward_url.get_ref().clone();
     new_url.set_path(req.uri().path());
     new_url.set_query(req.uri().query());
+    // optionally block reading files from containers (docker cp / docker export)
+    // check the normalized path that is forwarded (url turns "\" into "/" and resolves dot segments)
+    let path = new_url.path().trim_end_matches('/');
+    if app_config.get_ref().block_archive && path.ends_with("/archive") {
+        return Ok(web::HttpResponse::Forbidden().json(&DockerErrorMessage { message: String::from("container archive is not allowed") }));
+    }
+    if app_config.get_ref().block_export && path.ends_with("/export") {
+        return Ok(web::HttpResponse::Forbidden().json(&DockerErrorMessage { message: String::from("container export is not allowed") }));
+    }
     let forwarded_req = client.request_from(new_url.as_str(), req.head());
     let mut res = forwarded_req
         .send_body(body)
@@ -91,38 +104,40 @@ pub async fn forward(
                     debug!("Matched container route with Id {}", &m.id);
                     // we keep a stateful hashmap of all requested container ids and their names
                     // see AppStateWithContainerMap
-                    let mut cm = data.container_map.lock().unwrap();
+                    // only hold the lock briefly and never across .await (ntex workers are single-threaded -> deadlock)
+                    let cached = data.container_map.lock().unwrap().get(&m.id).copied().flatten();
 
                     // if the map does not already include the container id-name then we try to get it with our own request to docker api
                     // or if we encountered an error last time then try again
-                    if !cm.contains_key(&m.id) || cm.get(&m.id).unwrap().is_none() {
-                        debug!("Requested Id not in map, trying to inspect...");
-                        let info_res = docker::get_container_info(&client, &forward_url, &m.id).await;
-                        match info_res {
-                            Ok((name, labels)) => {
-                                let is_container_match = docker::match_labels_or_names(&app_config.get_ref().container_names, &app_config.get_ref().container_labels, &Vec::from([name.clone()]), &labels);
-                                debug!("Recording container '{}' {} valid", name, is!(is_container_match; "as";"as not"));
-                                cm.insert(m.id.clone(), Some(is_container_match));
-                            }
-                            Err(e) => {
-                                warn!("Could not inspect: {e}");
-                                if e.to_string().contains("No such container") {
-                                    cm.insert(m.id.clone(), Some(false));
-                                } else {
-                                    // if the error was not a 404 then allow trying again later
-                                    cm.insert(m.id.clone(), None);
+                    let allowed = match cached {
+                        Some(v) => Some(v),
+                        None => {
+                            debug!("Requested Id not in map, trying to inspect...");
+                            let entry = match docker::get_container_info(&client, &forward_url, &m.id).await {
+                                Ok((name, labels)) => {
+                                    let is_container_match = docker::match_labels_or_names(&app_config.get_ref().container_names, &app_config.get_ref().container_labels, &Vec::from([name.clone()]), &labels);
+                                    debug!("Recording container '{}' {} valid", name, is!(is_container_match; "as";"as not"));
+                                    Some(is_container_match)
                                 }
-                            }
+                                Err(e) => {
+                                    warn!("Could not inspect: {e}");
+                                    if e.to_string().contains("No such container") {
+                                        Some(false)
+                                    } else {
+                                        // if the error was not a 404 then allow trying again later
+                                        None
+                                    }
+                                }
+                            };
+                            data.container_map.lock().unwrap().insert(m.id.clone(), entry);
+                            entry
                         }
-                    }
+                    };
 
-                    // then we try to get the name from the stateful hashmap
-                    let allowed = cm.get(&m.id).unwrap();
-                    
                     match allowed {
                         Some(n) => {
                             // only return if a response if requested container has a name  that includes values from CONTAINER_NAMES
-                            if *n {
+                            if n {
                                 debug!("Matched container filters");
                                 // if the route resource is specifically the Container Inspect API
                                 // then we may need to scrub Envs if SCRUB_ENVS=true

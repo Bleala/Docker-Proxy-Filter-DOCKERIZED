@@ -58,7 +58,7 @@ pub async fn get_container_info(client: &web::types::State<http::Client>, u: &we
     let mut uri = u.get_ref().clone();
     uri.set_path(format!("containers/{id}/json", id = container_id).as_str());
 
-    let mut res = client.get(uri.to_string())
+    let res = client.get(uri.to_string())
     .send()
     .await;
        // .map_err(web::Error::from)?;

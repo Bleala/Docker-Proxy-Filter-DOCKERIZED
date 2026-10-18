@@ -1,31 +1,50 @@
-FROM rust:1.90-bookworm as Builder
+# Set build image
+FROM rust:1.99.1-trixie AS builder
 
+# Set shell options
+SHELL ["/bin/bash", "-e", "-u", "-x", "-o", "pipefail", "-c"]
+
+# Set Workdir
 WORKDIR /app
 
+# Initiate Cargo
 RUN cargo init
 
-COPY Cargo.lock Cargo.toml ./
+# Copy Cargo files
+COPY cargo/ ./
 
-# build dummy project with dependencies to get them compiled and cached
-RUN cargo build --release --target $(rustc --print host-tuple)
+# Build dummy project with dependencies to get them compiled and cached
+RUN cargo build --release --target "$(rustc --print host-tuple)"
 
-# copy full app code
+# Copy full app code
 COPY src/ src/
-# updated modified timestamp so build runs again
+
+# Updated modified timestamp so build runs again
 RUN touch src/main.rs
 
 # build full app to host arch and copy to generic location
-RUN export ARCH=$(rustc --print host-tuple); \
-    cargo build --release --target $ARCH \
-    && mkdir build \
-    && cp target/$ARCH/release/docker-proxy-filter build/docker-proxy-filter
+RUN ARCH="$(rustc --print host-tuple)"; \
+    export ARCH && \
+    cargo build --release --target "${ARCH}" && \
+    mkdir build && \
+    cp "target/${ARCH}/release/docker-proxy-filter" build/docker-proxy-filter
 
-FROM debian:bookworm-slim
+# Set base image
+FROM debian:13.7-slim AS docker-proxy-filter
 
 ENV RUST_LOG=info,docker_proxy_filter=debug
 
-# need ssl for web server
-RUN apt-get update && apt-get upgrade -y && apt-get install openssl -y && apt clean && rm -rf /var/lib/apt/lists/*
-# copy built app from generic location
+# Need SSL for web server
+RUN apt-get update && \
+        # Install OpenSSL
+        apt-get install --yes --no-install-recommends openssl && \
+        # Clean up
+        apt-get clean && \
+        # Delete apt lists
+        rm -rf /var/lib/apt/lists/*
+
+# Copy built app
 COPY --from=builder /app/build/docker-proxy-filter /usr/local/bin/docker-proxy-filter
-CMD ["docker-proxy-filter"]
+
+# Entrypoint
+ENTRYPOINT ["docker-proxy-filter"]

@@ -72,6 +72,12 @@ Container B's labels
 
 When `true` any responses from the [Container Inspect](https://docs.docker.com/reference/api/engine/version/v1.48/#tag/Container/operation/ContainerInspect) endpoint will have `Config.Env` set to an empty array. This prevents leaking of sensitive `environment:`/`-e` variables that you passed to your container, over the network.
 
+#### `BLOCK_ARCHIVE` / `BLOCK_EXPORT` Modifiers
+
+When `true` any requests to the [Container Archive](https://docs.docker.com/reference/api/engine/version/v1.48/#tag/Container/operation/ContainerArchive) (`docker cp`) or [Container Export](https://docs.docker.com/reference/api/engine/version/v1.48/#tag/Container/operation/ContainerExport) (`docker export`) endpoints are rejected with `403`. Otherwise files containing secrets (config files, mounted volumes) could still be read from a container even with `SCRUB_ENVS=true`.
+
+Requests with percent-encoded paths are always rejected with `400` so that these filters cannot be bypassed.
+
 ### More?
 
 If I find use cases for filtering other endpoints they will be implemented in the future! Open a new Issue if you have ideas.
@@ -185,4 +191,6 @@ All configuration is done through environmental variables.
 | `CONTAINER_NAMES`  | no       |         | A comma-delimited list of values to compare against a container name.                                                                                         |
 | `CONTAINER_LABELS` | no       |         | A comma-delimited list of key-values to compare against container labels.                                                                                     |
 | `SCRUB_ENVS`       | no       | false   | Remove `Env` list from [container inspect API](https://docs.docker.com/reference/api/engine/version/v1.48/#tag/Container/operation/ContainerInspect) response |
+| `BLOCK_ARCHIVE`    | no       | false   | Reject requests to the container archive API (`docker cp`) with `403` |
+| `BLOCK_EXPORT`     | no       | false   | Reject requests to the container export API (`docker export`) with `403` |
 

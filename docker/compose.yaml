@@ -1,3 +1,4 @@
+---
 services:
   proxy-container:
     image: foxxmd/docker-proxy-filter

@@ -2,7 +2,7 @@ use serde::Deserialize;
 use tracing::*;
 use std::collections::HashMap;
 
-fn default_scrub() -> bool {
+fn default_false() -> bool {
     false
 }
 fn default_port() -> u16 {
@@ -19,8 +19,12 @@ pub struct EnvConfig {
     pub container_names: Vec<String>,
     #[serde(default = "default_list")]
     pub container_labels: Vec<String>,
-    #[serde(default = "default_scrub")]
+    #[serde(default = "default_false")]
     pub scrub_envs: bool,
+    #[serde(default = "default_false")]
+    pub block_archive: bool,
+    #[serde(default = "default_false")]
+    pub block_export: bool,
     #[serde(default = "default_port")]
     pub port: u16,
 }
@@ -33,6 +37,8 @@ pub struct AppConfig {
     pub proxy_url: String,
     pub container_names: ContainerNames,
     pub scrub_envs: bool,
+    pub block_archive: bool,
+    pub block_export: bool,
     pub container_labels: ContainerLabels
 }
 
@@ -52,6 +58,8 @@ impl From<&EnvConfig> for AppConfig {
             proxy_url: item.proxy_url.clone(),
             container_names: item.container_names.clone(),
             scrub_envs: item.scrub_envs,
+            block_archive: item.block_archive,
+            block_export: item.block_export,
             container_labels: label_map.clone()
         }
     }
