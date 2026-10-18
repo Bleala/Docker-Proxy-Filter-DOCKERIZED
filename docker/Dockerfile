@@ -49,8 +49,7 @@ ARG DEBIAN_VERSION \
         IMAGE_VERSION
 
 # Set environment variables
-ENV RUST_LOG=info\
-        docker_proxy_filter=debug
+ENV RUST_LOG="info,docker_proxy_filter=debug"
 
 # Need SSL for web server
 RUN apt-get update && \
