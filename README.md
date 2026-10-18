@@ -32,7 +32,7 @@ A comma-delimited list of values that a Container's name may include. Any value 
 
 Example
 
-```
+```bash
 CONTAINER_NAMES=foo,bar
 
 Containers:
@@ -53,7 +53,7 @@ A comma-delimited list of labels with optional values (key-value) that any of a 
 
 Example
 
-```
+```bash
 CONTAINER_LABELS=myfoo,com.bar=fun
 
 Container A's labels
@@ -86,7 +86,7 @@ If I find use cases for filtering other endpoints they will be implemented in th
 
 Docker images are available for x86/ARMv7 hosts:
 
-```
+```bash
 docker.io/foxxmd/docker-proxy-filter:latest
 ghcr.io/foxxmd/docker-proxy-filter:latest
 ```
@@ -129,13 +129,12 @@ services:
 
 On your machine you are running these containers:
 
-
-|  Id  |     Name     |
-|------|--------------|
-| 1234 | foo          |
-| abcd | bar          |
+| Id | Name |
+| ------ | -------------- |
+| 1234 | foo |
+| abcd | bar |
 | 6969 | cool-program |
-| 0444 | fun-program  |
+| 0444 | fun-program |
 
 ```shell
 $ curl -i http://localhost:2375/v1.47/containers
@@ -185,12 +184,11 @@ Forbidden
 
 All configuration is done through environmental variables.
 
-|        Key         | Required | Default |                                                                          Description                                                                          |
-|--------------------|----------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `PROXY_URL`        | yes      |         | The fully-qualified URL to proxy API requests EX `http://socket-proxy:2375`                                                                                   |
-| `CONTAINER_NAMES`  | no       |         | A comma-delimited list of values to compare against a container name.                                                                                         |
-| `CONTAINER_LABELS` | no       |         | A comma-delimited list of key-values to compare against container labels.                                                                                     |
-| `SCRUB_ENVS`       | no       | false   | Remove `Env` list from [container inspect API](https://docs.docker.com/reference/api/engine/version/v1.48/#tag/Container/operation/ContainerInspect) response |
-| `BLOCK_ARCHIVE`    | no       | false   | Reject requests to the container archive API (`docker cp`) with `403` |
-| `BLOCK_EXPORT`     | no       | false   | Reject requests to the container export API (`docker export`) with `403` |
-
+| Key | Required | Default | Description |
+| -------------------- | ---------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PROXY_URL` | yes | | The fully-qualified URL to proxy API requests EX `http://socket-proxy:2375` |
+| `CONTAINER_NAMES` | no | | A comma-delimited list of values to compare against a container name. |
+| `CONTAINER_LABELS` | no | | A comma-delimited list of key-values to compare against container labels. |
+| `SCRUB_ENVS` | no | false | Remove `Env` list from [container inspect API](https://docs.docker.com/reference/api/engine/version/v1.48/#tag/Container/operation/ContainerInspect) response |
+| `BLOCK_ARCHIVE` | no | false | Reject requests to the container archive API (`docker cp`) with `403` |
+| `BLOCK_EXPORT` | no | false | Reject requests to the container export API (`docker export`) with `403` |
