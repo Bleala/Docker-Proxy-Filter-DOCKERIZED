@@ -1,6 +1,9 @@
 # Set build image
 FROM rust:1.99.1-trixie AS builder
 
+# Set shell options
+SHELL ["/bin/bash", "-e", "-u", "-x", "-o", "pipefail", "-c"]
+
 # Set Workdir
 WORKDIR /app
 
@@ -8,7 +11,7 @@ WORKDIR /app
 RUN cargo init
 
 # Copy Cargo files
-COPY Cargo.lock Cargo.toml ./
+COPY cargo/ ./
 
 # Build dummy project with dependencies to get them compiled and cached
 RUN cargo build --release --target "$(rustc --print host-tuple)"
