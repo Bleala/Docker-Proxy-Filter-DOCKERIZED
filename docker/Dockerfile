@@ -1,4 +1,4 @@
-FROM rust:1.90-bookworm as Builder
+FROM rust:1.90-bookworm AS builder
 
 WORKDIR /app
 
@@ -20,7 +20,7 @@ RUN export ARCH=$(rustc --print host-tuple); \
     && mkdir build \
     && cp target/$ARCH/release/docker-proxy-filter build/docker-proxy-filter
 
-FROM debian:bookworm-slim
+FROM debian:13.7-slim
 
 ENV RUST_LOG=info,docker_proxy_filter=debug
 
