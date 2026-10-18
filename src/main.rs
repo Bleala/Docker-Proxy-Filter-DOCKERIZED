@@ -1,5 +1,5 @@
 use tracing::*;
-use ntex::{http, web::{self}};
+use ntex::{http, time::Seconds, web::{self}};
 use std::sync::{Arc, Mutex};
 
 use std::collections::HashMap;
@@ -46,8 +46,14 @@ async fn main() -> std::io::Result<()> {
     let forward_url = url::Url::parse(&config.proxy_url)
         .map_err(|err| std::io::Error::new(std::io::ErrorKind::InvalidData, err))?;
     web::server(move || {
+        // keep idle upstream connections shorter than the upstream keep-alive (tecnativa/HAProxy: 10s),
+        // otherwise a connection already closed by the upstream gets reused -> "Connector has been disconnected"
+        let client = http::client::ClientBuilder::new()
+            .connector(http::client::Connector::new().keep_alive(Seconds(5)).finish())
+            .finish();
+
         web::App::new()
-            .state(http::Client::new())
+            .state(client)
             .state(forward_url.clone())
             .state(config.container_names.clone())
             .state(cm.clone())
