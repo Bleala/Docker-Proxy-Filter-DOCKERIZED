@@ -3,7 +3,7 @@ services:
   proxy-container:
     image: docker-proxy-filter
     build:
-      dockerfile: docker/Dockerfile
+      dockerfile: Dockerfile
       context: .
     env_file: .env
     ports:
