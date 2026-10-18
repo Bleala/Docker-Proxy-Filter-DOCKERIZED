@@ -129,9 +129,8 @@ services:
 
 On your machine you are running these containers:
 
-
 | Id | Name |
-|------|--------------|
+| ------ | -------------- |
 | 1234 | foo |
 | abcd | bar |
 | 6969 | cool-program |
@@ -193,4 +192,3 @@ All configuration is done through environmental variables.
 | `SCRUB_ENVS` | no | false | Remove `Env` list from [container inspect API](https://docs.docker.com/reference/api/engine/version/v1.48/#tag/Container/operation/ContainerInspect) response |
 | `BLOCK_ARCHIVE` | no | false | Reject requests to the container archive API (`docker cp`) with `403` |
 | `BLOCK_EXPORT` | no | false | Reject requests to the container export API (`docker export`) with `403` |
-
