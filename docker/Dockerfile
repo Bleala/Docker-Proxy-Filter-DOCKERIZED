@@ -75,7 +75,9 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 #         rm -rf /var/lib/apt/lists/*
 
 # Install runtime dependencies
-RUN apk add --no-cache \
+        # Fix CVE-2026-85091 until new alpine Image is released
+RUN apk upgrade --no-cache && \
+        apk add --no-cache \
             tini \
             tzdata
 
