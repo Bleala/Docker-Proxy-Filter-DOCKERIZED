@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 # After changing dependencies, packages or features update Cargo.lock
-# Run from the docker/ folder
-# docker run --rm -v "$PWD:/work:z" rust:1.99-alpine3.24 sh -c 'cp -r /work/cargo /tmp/b && cp -r /work/src /tmp/b/src && cd /tmp/b && cargo fetch && cp Cargo.lock /work/cargo/Cargo.lock'
+# Run from the docker/build/ folder
+# docker run --rm -v "$PWD:/work:z" -w /work rust:1.99-alpine3.24 cargo fetch
 [dependencies]
 dotenvy = "0.15.7"
 envy = "0.4.2"
