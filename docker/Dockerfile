@@ -1,6 +1,6 @@
 # Global variables
-ARG DEBIAN_VERSION="13.7-slim" \
-    RUST_VERSION="1.99.1-trixie" \
+ARG ALPINE_VERSION="3.24.2" \
+    RUST_VERSION="1.99-alpine3.24" \
     IMAGE_VERSION="1.0.0"
 
 # -----------------------------------------------------------------------------------------------
@@ -12,7 +12,7 @@ FROM rust:${RUST_VERSION} AS builder
 ARG RUST_VERSION
 
 # Set shell options
-SHELL ["/bin/bash", "-e", "-u", "-x", "-o", "pipefail", "-c"]
+SHELL ["/bin/ash", "-e", "-u", "-x", "-o", "pipefail", "-c"]
 
 # Set Workdir
 WORKDIR /app
@@ -21,41 +21,37 @@ WORKDIR /app
 RUN cargo init
 
 # Copy Cargo files
-COPY cargo/ ./
+COPY build/Cargo.* ./
 
 # Build dummy project with dependencies to get them compiled and cached
-RUN cargo build --release --target "$(rustc --print host-tuple)"
+RUN cargo build --release --locked --target "$(rustc --print host-tuple)"
 
 # Copy full app code
-COPY src/ src/
+COPY build/src/ src/
 
 # Updated modified timestamp so build runs again
 RUN touch src/main.rs
 
 # build full app to host arch and copy to generic location
 RUN ARCH="$(rustc --print host-tuple)"; \
-    export ARCH && \
-    cargo build --release --target "${ARCH}" && \
+    cargo build --release --locked --target "${ARCH}" && \
     mkdir build && \
-    cp "target/${ARCH}/release/docker-proxy-filter" build/docker-proxy-filter && \
-    # Strip binary
-    strip /app/build/docker-proxy-filter
+    cp "target/${ARCH}/release/docker-proxy-filter" build/docker-proxy-filter
 
 # -----------------------------------------------------------------------------------------------
 
 # Set base image
-FROM debian:${DEBIAN_VERSION} AS docker-proxy-filter
+FROM alpine:${ALPINE_VERSION} AS docker-proxy-filter
 
 # Build arguments
-ARG DEBIAN_VERSION \
-        DEBIAN_FRONTEND="noninteractive" \
+ARG ALPINE_VERSION \
         IMAGE_VERSION \
         PROXY_USER="docker-proxy-filter" \
         PROXY_USER_UID="1000" \
         PROXY_USER_GID="1000"
 
 # Set shell options
-SHELL ["/bin/bash", "-e", "-u", "-x", "-o", "pipefail", "-c"]
+SHELL ["/bin/ash", "-e", "-u", "-x", "-o", "pipefail", "-c"]
 
 # Set environment variables
 ENV PORT="2375" \
@@ -67,27 +63,37 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD ["/files/scripts/healthcheck.sh"]
 
 # Install runtime dependencies
-RUN apt-get update && \
-        # Install OpenSSL
-        apt-get install --yes --no-install-recommends \
-            openssl \
+# RUN apt-get update && \
+#         # Install OpenSSL
+#         apt-get install --yes --no-install-recommends \
+#             openssl \
+#             tini \
+#             tzdata && \
+#         # Clean up
+#         apt-get clean && \
+#         # Delete apt lists
+#         rm -rf /var/lib/apt/lists/*
+
+# Install runtime dependencies
+RUN apk add --no-cache \
             tini \
-            tzdata && \
-        # Clean up
-        apt-get clean && \
-        # Delete apt lists
-        rm -rf /var/lib/apt/lists/*
+            tzdata
 
 # Add Docker Proxy Filter user and group
-RUN groupadd --gid "${PROXY_USER_GID}" "${PROXY_USER}" && \
-        useradd --uid "${PROXY_USER_UID}" --gid "${PROXY_USER_GID}" \
-            --no-create-home --shell /usr/sbin/nologin "${PROXY_USER}"
+# RUN groupadd --gid "${PROXY_USER_GID}" "${PROXY_USER}" && \
+#         useradd --uid "${PROXY_USER_UID}" --gid "${PROXY_USER_GID}" \
+#             --no-create-home --shell /usr/sbin/nologin "${PROXY_USER}"
+
+# Add Docker Proxy Filter user and group
+RUN addgroup -g "${PROXY_USER_GID}" -S "${PROXY_USER}" && \
+    adduser -u "${PROXY_USER_UID}" -S -D -H -G "${PROXY_USER}" "${PROXY_USER}"
 
 # Copy Files
-COPY --chown="${PROXY_USER_UID}:${PROXY_USER_GID}" --chmod=755 files /files
+# No chown -> root owns files
+COPY --chmod=755 files /files
 
 # Copy built app
-COPY --chown="${PROXY_USER_UID}:${PROXY_USER_GID}" --chmod=755 --from=builder /app/build/docker-proxy-filter /usr/local/bin/docker-proxy-filter
+COPY --chmod=755 --from=builder /app/build/docker-proxy-filter /usr/local/bin/docker-proxy-filter
 
 # Set build date argument here, because caching would break otherwise
 # It is set during the build process in the reusable workflow
@@ -111,4 +117,5 @@ EXPOSE 2375/tcp
 USER "${PROXY_USER}"
 
 # Entrypoint
-ENTRYPOINT ["/usr/bin/tini", "--", "docker-proxy-filter"]
+# ENTRYPOINT ["/usr/bin/tini", "--", "docker-proxy-filter"]
+ENTRYPOINT ["/sbin/tini", "--", "docker-proxy-filter"]
