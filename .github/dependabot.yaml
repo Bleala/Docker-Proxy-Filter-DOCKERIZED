@@ -19,6 +19,36 @@ updates:
       - "automated"
       - "docker"
 
+  # Configuration for Cargo dependencies
+  - package-ecosystem: "cargo"
+    directory: "/docker/cargo"
+    versioning-strategy: auto
+    schedule:
+      # Options: "daily", "weekly", "monthly"
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    assignees:
+      - "Bleala"
+    groups:
+      all-cargo:
+        applies-to: version-updates
+        update-types:
+          - "major"
+          - "minor"
+          - "patch"
+      all-cargo-security:
+        applies-to: security-updates
+        update-types:
+          - "major"
+          - "minor"
+          - "patch"
+    target-branch: "main"
+    labels:
+      - "dependencies"
+      - "automated"
+      - "rust"
+
   # Configuration for GitHub Actions dependencies
   - package-ecosystem: "github-actions"
     directory: "/"
