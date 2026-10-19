@@ -15,6 +15,7 @@ on:
       - main
       - dev
     paths:
+      - 'docker/build/**'
       - 'docker/files/**'
       - 'docker/Dockerfile'
   workflow_dispatch:
