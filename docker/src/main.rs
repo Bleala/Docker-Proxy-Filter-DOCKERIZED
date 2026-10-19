@@ -22,6 +22,8 @@ async fn main() -> std::io::Result<()> {
     }
 
     tracing_subscriber::fmt::fmt()
+        // Set tzdata time
+        .with_timer(tracing_subscriber::fmt::time::ChronoLocal::rfc_3339())
         // uses RUST_LOG env for filtering log levels and namespaces
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
