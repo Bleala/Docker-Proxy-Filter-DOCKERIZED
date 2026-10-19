@@ -21,7 +21,7 @@ updates:
 
   # Configuration for Cargo dependencies
   - package-ecosystem: "cargo"
-    directory: "/docker/cargo"
+    directory: "/docker/build"
     versioning-strategy: auto
     schedule:
       # Options: "daily", "weekly", "monthly"
